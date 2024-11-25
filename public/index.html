@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-time Sensor Data</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      background: linear-gradient(to bottom, #1c1c3c, #29346b);
+      color: white;
+      text-align: center;
+    }
+
+    /* Thanh điều hướng sẽ ẩn khi không hover */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 50px; /* Chiều rộng ban đầu của thanh điều hướng */
+      background-color: rgba(255, 255, 255, 0.1);
+      overflow: hidden; /* Ẩn các mục trong thanh điều hướng khi không hover */
+      transition: width 0.3s ease; /* Hiệu ứng mở rộng thanh điều hướng */
+    }
+
+    .navbar:hover {
+      width: 200px; /* Mở rộng thanh điều hướng khi hover */
+    }
+
+    /* Icon 3 gạch ngang */
+    .navbar .icon {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      margin: 20px auto;
+      width: 30px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .navbar .icon div {
+      width: 30px;
+      height: 4px;
+      background-color: white;
+      border-radius: 2px;
+    }
+
+    /* Các mục trong thanh điều hướng */
+    .navbar a {
+      color: white;
+      padding: 14px 20px;
+      text-decoration: none;
+      text-align: center;
+      font-size: 1.2rem;
+      margin: 10px 0;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+      display: block;
+      opacity: 0; /* Ẩn các liên kết ban đầu */
+      pointer-events: none; /* Vô hiệu hóa các liên kết khi không hover */
+    }
+
+    .navbar:hover a {
+      opacity: 1; /* Hiển thị các liên kết khi hover */
+      pointer-events: auto; /* Kích hoạt lại các liên kết khi hover */
+    }
+
+    .navbar a:hover {
+      background-color: #00b8b8;
+    }
+
+    .content {
+      top: 50px;
+      left: 100px;
+      flex: 1;
+      margin-left: 220px; /* Căn chỉnh nội dung sang phải so với thanh điều hướng */
+      height: 650px;
+      width: 80%;
+      max-width: 900px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: #ddd;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+
+    th {
+      background-color: #1c1c3c;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.1rem;
+    }
+
+    tr:nth-child(even) {
+      background-color: #3b4d7d;
+    }
+
+    tr:nth-child(odd) {
+      background-color: #2b3c64;
+    }
+
+    tr:hover {
+      background-color: #4d6588;
+    }
+
+    td {
+      color: #ccc;
+    }
+
+    h1, table {
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* Link "Download Excel" */
+    .download-link {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      color: #00b8b8;
+      font-size: 1.1rem;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 8px 16px;
+      background-color: transparent;
+      border: 2px solid #00b8b8;
+      border-radius: 5px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .download-link:hover {
+      background-color: #00b8b8;
+      color: white;
+    }
+  </style>
+  <script>
+    async function fetchData() {
+      const response = await fetch('/api/sensors');
+      const data = await response.json();
+
+      const tableBody = document.getElementById('dataTable');
+      tableBody.innerHTML = '';
+      data.forEach(record => {
+        const row = `<tr>
+          <td>${record.temperature} °C</td>
+          <td>${record.humidity} %</td>
+          <td>${new Date(record.timestamp).toLocaleString()}</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    setInterval(fetchData, 2000);
+    fetchData();
+
+    function exportToExcel() {
+      const table = document.getElementById('dataTable');
+      const rows = table.getElementsByTagName('tr');
+      const data = [];
+
+      data.push(['Temperature', 'Humidity', 'Timestamp']);
+
+      for (let row of rows) {
+        const cells = row.getElementsByTagName('td');
+        const rowData = [];
+        for (let cell of cells) {
+          rowData.push(cell.textContent);
+        }
+        data.push(rowData);
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sensor Data');
+
+      XLSX.writeFile(wb, 'sensor_data.xlsx');
+    }
+  </script>
+</head>
+<body>
+  <!-- Thanh điều hướng với 3 gạch ngang -->
+  <div class="navbar">
+    <div class="icon">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+    <a href="/weather">Weather</a>
+    <a href="/databoard">Databoard</a>
+    <a href="/dashboard">Dashboard</a>
+  </div>
+
+  <div class="content">
+    <h1>Real-time Sensor Data</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Temperature</th>
+          <th>Humidity</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="dataTable">
+        <!-- Data will be dynamically inserted here -->
+      </tbody>
+    </table>
+
+    <!-- Thêm link tải file Excel -->
+    <a href="#" class="download-link" onclick="exportToExcel()">Download Excel</a>
+  </div>
+</body>
+</html>

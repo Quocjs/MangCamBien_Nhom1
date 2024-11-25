@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Combo Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Điều chỉnh kích thước biểu đồ */
+    #comboChart {
+      width: 85%; /* Biểu đồ chiếm 75% chiều rộng của màn hình */
+      height: 600px; /* Chiều cao cố định của biểu đồ */
+      margin: 0 auto; /* Căn giữa biểu đồ trên màn hình */
+      display: block;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(to bottom, #372167, #1a1a2f);
+      color: white;
+      text-align: center;
+    }
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 50px; /* Chiều rộng ban đầu của thanh điều hướng */
+      background-color: rgba(255, 255, 255, 0.1);
+      overflow: hidden; /* Ẩn các mục trong thanh điều hướng khi không hover */
+      transition: width 0.3s ease; /* Hiệu ứng mở rộng thanh điều hướng */
+    }
+
+    .navbar:hover {
+      width: 200px; /* Mở rộng thanh điều hướng khi hover */
+    }
+
+    /* Icon 3 gạch ngang */
+    .navbar .icon {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      margin: 20px auto;
+      width: 30px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .navbar .icon div {
+      width: 30px;
+      height: 4px;
+      background-color: white;
+      border-radius: 2px;
+    }
+
+    /* Các mục trong thanh điều hướng */
+    .navbar a {
+      color: white;
+      padding: 14px 20px;
+      text-decoration: none;
+      text-align: center;
+      font-size: 1.2rem;
+      margin: 10px 0;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+      display: block;
+      opacity: 0; /* Ẩn các liên kết ban đầu */
+      pointer-events: none; /* Vô hiệu hóa các liên kết khi không hover */
+    }
+
+    .navbar:hover a {
+      opacity: 1; /* Hiển thị các liên kết khi hover */
+      pointer-events: auto; /* Kích hoạt lại các liên kết khi hover */
+    }
+
+    .navbar a:hover {
+      background-color: #00b8b8;
+    }
+
+    .tieude{
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <div class="icon">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+    <a href="/weather">Weather</a>
+    <a href="/databoard">Databoard</a>
+    <a href="/dashboard">Dashboard</a>
+  </div>
+
+  <h1 class="tieude"><b>Dashboard - Tỷ lệ Nhiệt độ và Độ ẩm</b></h1>
+  <canvas id="comboChart"></canvas>
+
+  <script>
+    const fetchData = async () => {
+      try {
+        // Lấy dữ liệu từ API
+        const response = await fetch('/api/sensors');
+        const data = await response.json();
+        
+        // Lấy dữ liệu timestamps, temperatures và humidities từ API
+        const timestamps = data.map(item => item.timestamp);
+        const temperatures = data.map(item => item.temperature);
+        const humidities = data.map(item => item.humidity);
+
+        // Render biểu đồ Combo
+        renderComboChart(timestamps, temperatures, humidities);
+      } catch (error) {
+        console.error('Error fetching sensor data:', error);
+      }
+    };
+
+    const renderComboChart = (timestamps, temperatures, humidities) => {
+      const ctx = document.getElementById('comboChart').getContext('2d');
+
+      new Chart(ctx, {
+        type: 'bar', // Kiểu biểu đồ chung cho tất cả các dataset
+        data: {
+          labels: timestamps.map(t => new Date(t).toLocaleTimeString()), // Chuyển timestamps sang giờ, phút, giây
+          datasets: [
+            {
+              label: 'Nhiệt độ (°C)',
+              data: temperatures,
+              type: 'bar',  // Kiểu cột cho nhiệt độ
+              backgroundColor: 'rgba(255, 99, 132, 0.6)', // Màu nền cho cột nhiệt độ
+              borderColor: 'rgba(255, 99, 132, 1)', // Màu viền cho cột nhiệt độ
+              borderWidth: 1
+            },
+            {
+              label: 'Độ ẩm (%)',
+              data: humidities,
+              type: 'bar',  // Kiểu cột cho độ ẩm
+              backgroundColor: 'rgba(54, 162, 235, 0.6)', // Màu nền cho cột độ ẩm
+              borderColor: 'rgba(54, 162, 235, 1)', // Màu viền cho cột độ ẩm
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              type: 'category',  // Trục X là theo dạng Category
+              ticks: {
+                autoSkip: true,  // Tự động bỏ qua một số nhãn trên trục X để tránh chồng chéo
+                maxRotation: 0   // Không quay các nhãn
+              }
+            },
+            y: {
+              beginAtZero: true,  // Bắt đầu từ 0
+              max: 100            // Giới hạn trục Y với giá trị tối đa là 100
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+            }
+          }
+        }
+      });
+    };
+
+    // Gọi hàm fetch dữ liệu khi trang load
+    fetchData();
+  </script>
+</body>
+</html>
