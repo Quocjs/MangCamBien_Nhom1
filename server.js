@@ -93,7 +93,7 @@ app.get('/databoard', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send("This is the root route, it won't serve index.html anymore.");
+  res.render('weather.ejs') // Trỏ trực tiếp đến index.html
 });
 
 // Chạy server
